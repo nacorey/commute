@@ -21,7 +21,12 @@ from config import (
     MAX_GEOCODE_CALLS,
 )
 from src.preprocessor import preprocess
-from src.value_model import fit_quality_model, aggregate_to_complex, classify_zones
+from src.value_model import (
+    fit_quality_model,
+    aggregate_to_complex,
+    classify_zones,
+    add_complex_price_stats,
+)
 from src.commute import load_dong_commute
 from src.subway_access import load_stations, add_subway_access
 from src.apt_geocoder import load_dong_coords, geocode_complexes
@@ -46,6 +51,7 @@ def main():
 
     comp = aggregate_to_complex(scored, k=SHRINKAGE_K)
     print(f"단지 수: {len(comp):,}개")
+    comp = add_complex_price_stats(comp, scored)
 
     # ── 단지 지오코딩 (거래 많은 단지 우선, 캐시 + 동 좌표 폴백) ──
     comp = comp.sort_values("n", ascending=False).reset_index(drop=True)

@@ -112,3 +112,24 @@ def test_classify_zones_uses_subway_feature_when_present():
                          recency_months=6, latest_ym=202603)
     assert "subway_dist_km" in out.columns
     assert out["pred_idx"].nunique() > 1  # subway가 회귀에 반영됨
+
+
+from src.value_model import add_complex_price_stats
+
+
+def test_add_complex_price_stats():
+    scored = pd.DataFrame(
+        {
+            "구": ["A", "A", "A"],
+            "법정동": ["x", "x", "x"],
+            "아파트명": ["P", "P", "Q"],
+            "price_per_sqm": [1000.0, 1200.0, 800.0],
+            "거래금액": [50000, 60000, 40000],
+        }
+    )
+    comp = pd.DataFrame({"구": ["A", "A"], "법정동": ["x", "x"], "아파트명": ["P", "Q"]})
+    out = add_complex_price_stats(comp, scored)
+    p = out.set_index("아파트명")
+    assert p.loc["P", "avg_price_per_sqm"] == 1100.0
+    assert p.loc["Q", "avg_price_per_sqm"] == 800.0
+    assert p.loc["P", "median_amount"] == 55000.0

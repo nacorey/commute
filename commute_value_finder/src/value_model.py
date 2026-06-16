@@ -122,3 +122,16 @@ def classify_zones(
         d["n"], bins=[-1, 4, 9, np.inf], labels=["낮음", "보통", "높음"]
     ).astype(str)
     return d
+
+
+def add_complex_price_stats(comp: pd.DataFrame, scored: pd.DataFrame) -> pd.DataFrame:
+    """단지별 실제 평당가·중위 거래금액을 comp에 병합 (LLM·대시보드용)."""
+    stats = (
+        scored.groupby(["구", "법정동", "아파트명"])
+        .agg(
+            avg_price_per_sqm=("price_per_sqm", "mean"),
+            median_amount=("거래금액", "median"),
+        )
+        .reset_index()
+    )
+    return comp.merge(stats, on=["구", "법정동", "아파트명"], how="left")
