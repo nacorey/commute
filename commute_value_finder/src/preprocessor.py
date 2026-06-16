@@ -28,6 +28,7 @@ def add_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     d["거래금액"] = d["거래금액"].map(coerce_amount)
     d["전용면적"] = pd.to_numeric(d["전용면적"], errors="coerce")
+    d["층"] = pd.to_numeric(d["층"], errors="coerce")
     d["price_per_sqm"] = d["거래금액"] / d["전용면적"]
     d["age"] = pd.to_numeric(d["년"], errors="coerce") - pd.to_numeric(
         d["건축년도"], errors="coerce"
@@ -46,7 +47,13 @@ def add_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
 def remove_invalid(df: pd.DataFrame) -> pd.DataFrame:
     """비정상 면적(≤0)·연령(<0)·결측 평당가 제거."""
     d = df.copy()
-    mask = (d["전용면적"] > 0) & (d["age"] >= 0) & d["price_per_sqm"].notna()
+    mask = (
+        (d["전용면적"] > 0)
+        & (d["age"] >= 0)
+        & d["price_per_sqm"].notna()
+    )
+    if "층" in d.columns:
+        mask = mask & d["층"].notna()
     return d[mask].reset_index(drop=True)
 
 

@@ -75,3 +75,22 @@ def test_preprocess_end_to_end(sample_transactions):
     assert "age" in out.columns
     assert "area_band" in out.columns
     assert (out["전용면적"] > 0).all()
+
+
+def test_floor_coerced_and_invalid_floor_dropped():
+    df = pd.DataFrame(
+        {
+            "구": ["A", "A"],
+            "법정동": ["x", "x"],
+            "아파트명": ["P", "Q"],
+            "전용면적": [84.0, 84.0],
+            "거래금액": [100000, 100000],
+            "층": ["10", "B1"],          # B1 = 강제변환 불가 → 제거 대상
+            "건축년도": [2000, 2000],
+            "년": [2025, 2025],
+            "월": [1, 2],
+        }
+    )
+    out = preprocess(df)
+    assert len(out) == 1                 # 비정상 층(B1) 행 제거
+    assert float(out.iloc[0]["층"]) == 10.0
