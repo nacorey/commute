@@ -1,0 +1,15 @@
+[
+  {"name": "GTX-A 삼성", "line": "GTX-A", "lat": 37.5088, "lon": 127.0631, "open_year": 2028},
+  {"name": "GTX-A 수서", "line": "GTX-A", "lat": 37.4870, "lon": 127.1010, "open_year": 2024},
+  {"name": "GTX-A 서울역", "line": "GTX-A", "lat": 37.5547, "lon": 126.9707, "open_year": 2026},
+  {"name": "GTX-A 연신내", "line": "GTX-A", "lat": 37.6191, "lon": 126.9211, "open_year": 2026},
+  {"name": "GTX-C 청량리", "line": "GTX-C", "lat": 37.5800, "lon": 127.0470, "open_year": 2028},
+  {"name": "GTX-C 광운대", "line": "GTX-C", "lat": 37.6230, "lon": 127.0610, "open_year": 2028},
+  {"name": "GTX-C 창동", "line": "GTX-C", "lat": 37.6530, "lon": 127.0477, "open_year": 2028},
+  {"name": "GTX-C 양재", "line": "GTX-C", "lat": 37.4843, "lon": 127.0342, "open_year": 2028},
+  {"name": "GTX-B 여의도", "line": "GTX-B", "lat": 37.5215, "lon": 126.9243, "open_year": 2030},
+  {"name": "GTX-B 청량리", "line": "GTX-B", "lat": 37.5800, "lon": 127.0470, "open_year": 2030},
+  {"name": "신안산선 영등포", "line": "신안산선", "lat": 37.5157, "lon": 126.9075, "open_year": 2025},
+  {"name": "동북선 왕십리", "line": "동북선", "lat": 37.5614, "lon": 127.0378, "open_year": 2026},
+  {"name": "동북선 상계", "line": "동북선", "lat": 37.6542, "lon": 127.0568, "open_year": 2026}
+]
