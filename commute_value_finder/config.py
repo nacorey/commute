@@ -71,3 +71,8 @@ def get_analysis_months() -> list[str]:
             year -= 1
         months.append(f"{year}{month:02d}")
     return sorted(months)
+
+
+# ── 모델 정제 파라미터 ──
+AREA_BANDS = [60, 85, 135]            # 전용면적 평형 구간 경계 (㎡)
+PRICE_OUTLIER_PCT = (1, 99)           # 평당가 이상치 절단 백분위
