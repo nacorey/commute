@@ -65,3 +65,51 @@ def aggregate_to_complex(scored: pd.DataFrame, k: float) -> pd.DataFrame:
         comp["n"] + k
     )
     return comp
+
+
+def ym_subtract_months(ym: int, months: int) -> int:
+    """YYYYMM 정수에서 N개월 뺀 YYYYMM."""
+    year, month = divmod(int(ym), 100)
+    total = year * 12 + (month - 1) - months
+    y, m = divmod(total, 12)
+    return y * 100 + (m + 1)
+
+
+def classify_zones(
+    comp: pd.DataFrame,
+    commute: pd.DataFrame,
+    sigma_mult: float,
+    min_tx: int,
+    recency_months: int,
+    latest_ym: int,
+) -> pd.DataFrame:
+    """2단계: 입지가치지수 ~ commute_minutes → final_resid → zone.
+
+    Blue는 잔차 조건 + 거래건수 + 최근성 게이트를 모두 만족해야 확정.
+    """
+    d = comp.merge(
+        commute[["구", "법정동", "commute_minutes"]], on=["구", "법정동"], how="left"
+    )
+    # 통근 결측은 전체 평균으로 대체(분류 안정성)
+    mean_commute = d["commute_minutes"].mean()
+    d["commute_minutes"] = d["commute_minutes"].fillna(mean_commute)
+
+    model = LinearRegression().fit(d[["commute_minutes"]], d["입지가치지수"])
+    d["pred_idx"] = model.predict(d[["commute_minutes"]])
+    d["final_resid"] = d["입지가치지수"] - d["pred_idx"]
+    d["deviation_pct"] = (d["final_resid"] * 100).round(1)  # log 잔차 ≈ % 편차
+
+    sigma = d["final_resid"].std()
+    d["zone"] = "Gray"
+    d.loc[d["final_resid"] > sigma_mult * sigma, "zone"] = "Red"
+
+    blue_resid = d["final_resid"] < -sigma_mult * sigma
+    recency_cut = ym_subtract_months(latest_ym, recency_months)
+    gate = blue_resid & (d["n"] >= min_tx) & (d["last_ym"] >= recency_cut)
+    d.loc[gate, "zone"] = "Blue"
+    d["blue_candidate_lowconf"] = blue_resid & ~gate
+
+    d["confidence"] = pd.cut(
+        d["n"], bins=[-1, 4, 9, np.inf], labels=["낮음", "보통", "높음"]
+    ).astype(str)
+    return d
