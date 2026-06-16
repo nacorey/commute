@@ -92,3 +92,23 @@ def test_classify_zones_handles_unmatched_commute():
                          recency_months=6, latest_ym=202603)
     assert set(out["zone"]).issubset({"Blue", "Gray", "Red"})
     assert out["final_resid"].notna().all()
+
+
+def test_classify_zones_uses_subway_feature_when_present():
+    # 한 동(통근 동일)에서 subway_dist_km만 다르면, 예측이 단지마다 달라야 함
+    comp = pd.DataFrame(
+        {
+            "구": ["A", "A", "A", "A"],
+            "법정동": ["x", "x", "x", "x"],
+            "아파트명": ["P", "Q", "R", "S"],
+            "입지가치지수": [-0.4, -0.4, 0.4, 0.4],
+            "n": [10, 10, 10, 10],
+            "last_ym": [202603, 202603, 202603, 202603],
+            "subway_dist_km": [0.2, 2.0, 0.2, 2.0],
+        }
+    )
+    commute = pd.DataFrame({"구": ["A"], "법정동": ["x"], "commute_minutes": [30]})
+    out = classify_zones(comp, commute, sigma_mult=1.0, min_tx=5,
+                         recency_months=6, latest_ym=202603)
+    assert "subway_dist_km" in out.columns
+    assert out["pred_idx"].nunique() > 1  # subway가 회귀에 반영됨
