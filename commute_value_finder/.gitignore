@@ -1,0 +1,15 @@
+# Environment
+.env
+
+# Data & Output
+data/*.csv
+data/*.json
+output/*.html
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/

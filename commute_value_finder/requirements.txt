@@ -1,0 +1,14 @@
+pandas
+numpy
+geopandas
+folium
+scikit-learn
+requests
+python-dotenv
+tqdm
+shapely
+anthropic
+openai
+streamlit
+streamlit-folium
+matplotlib

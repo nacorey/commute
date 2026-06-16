@@ -1,0 +1,23 @@
+# Environment / secrets
+.env
+**/.env
+
+# Data & Output (large / regenerable)
+**/data/*.csv
+**/data/*.json
+**/data/raw/
+**/output/*.html
+**/output/*.png
+**/output/logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Tooling
+.playwright-mcp/
