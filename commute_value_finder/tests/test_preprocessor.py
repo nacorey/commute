@@ -118,3 +118,19 @@ def test_remove_dong_outliers_skips_small_dongs():
                        "price_per_sqm": [1000.0, 1100.0, 50.0]})
     out = remove_dong_outliers(df, k_iqr=3.0, min_rows=20)
     assert len(out) == 3
+
+
+from src.preprocessor import remove_small_units
+
+
+def test_remove_small_units():
+    df = pd.DataFrame({"전용면적": [84.0, 18.0, 45.0, 29.9]})
+    out = remove_small_units(df, min_area=30.0)
+    assert list(out["전용면적"]) == [84.0, 45.0]   # 18, 29.9 제거
+
+
+def test_preprocess_keeps_normal_units(sample_transactions):
+    # sample_transactions의 전용면적은 모두 >=49㎡ → 소형 필터로 제거되면 안 됨
+    out = preprocess(sample_transactions)
+    assert (out["전용면적"] >= 30).all()
+    assert len(out) >= 3  # winsorize(1,99) on 5 rows removes 2 extremes → 3 remain
