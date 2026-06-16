@@ -19,6 +19,7 @@ from config import (
     MIN_TRANSACTIONS_PER_COMPLEX,
     RECENCY_MONTHS,
     MAX_GEOCODE_CALLS,
+    EXTREME_DEVIATION_PCT,
 )
 from src.preprocessor import preprocess
 from src.value_model import (
@@ -77,7 +78,8 @@ def main():
     commute = load_dong_commute(data_dir / "commute_cache.json")
     latest_ym = int(clean["거래년월"].max())
     zones = classify_zones(comp, commute, ZONE_SIGMA, MIN_TRANSACTIONS_PER_COMPLEX,
-                           RECENCY_MONTHS, latest_ym)
+                           RECENCY_MONTHS, latest_ym,
+                           max_deviation_pct=EXTREME_DEVIATION_PCT)
 
     out_path = data_dir / "complex_zones.csv"
     zones.to_csv(out_path, index=False, encoding="utf-8-sig")

@@ -94,3 +94,43 @@ def test_floor_coerced_and_invalid_floor_dropped():
     out = preprocess(df)
     assert len(out) == 1                 # 비정상 층(B1) 행 제거
     assert float(out.iloc[0]["층"]) == 10.0
+
+
+from src.preprocessor import remove_dong_outliers
+
+
+def test_remove_dong_outliers_removes_neighborhood_extreme():
+    # 강남: 대부분 ~5000, 하나만 985(동네 기준 극단) → 제거. 노원: 정상.
+    gangnam = [{"구": "강남구", "법정동": "삼성동", "price_per_sqm": v}
+               for v in [5000, 5100, 4900, 5050, 4950] * 6]
+    gangnam.append({"구": "강남구", "법정동": "삼성동", "price_per_sqm": 985.0})
+    nowon = [{"구": "노원구", "법정동": "상계동", "price_per_sqm": v}
+             for v in [1500, 1550, 1480, 1520] * 6]
+    df = pd.DataFrame(gangnam + nowon)
+    out = remove_dong_outliers(df, k_iqr=3.0, min_rows=20)
+    assert 985.0 not in out["price_per_sqm"].values
+    assert len(out) == len(df) - 1
+
+
+def test_remove_dong_outliers_skips_small_dongs():
+    # 거래 적은 동(min_rows 미만)은 필터하지 않음
+    df = pd.DataFrame({"구": ["A"] * 3, "법정동": ["x"] * 3,
+                       "price_per_sqm": [1000.0, 1100.0, 50.0]})
+    out = remove_dong_outliers(df, k_iqr=3.0, min_rows=20)
+    assert len(out) == 3
+
+
+from src.preprocessor import remove_small_units
+
+
+def test_remove_small_units():
+    df = pd.DataFrame({"전용면적": [84.0, 18.0, 45.0, 29.9]})
+    out = remove_small_units(df, min_area=30.0)
+    assert list(out["전용면적"]) == [84.0, 45.0]   # 18, 29.9 제거
+
+
+def test_preprocess_keeps_normal_units(sample_transactions):
+    # sample_transactions의 전용면적은 모두 >=49㎡ → 소형 필터로 제거되면 안 됨
+    out = preprocess(sample_transactions)
+    assert (out["전용면적"] >= 30).all()
+    assert len(out) >= 3  # winsorize(1,99) on 5 rows removes 2 extremes → 3 remain

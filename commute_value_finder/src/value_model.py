@@ -83,6 +83,7 @@ def classify_zones(
     min_tx: int,
     recency_months: int,
     latest_ym: int,
+    max_deviation_pct: float = 100.0,
 ) -> pd.DataFrame:
     """2단계: 입지가치지수 ~ commute_minutes → final_resid → zone.
 
@@ -112,9 +113,11 @@ def classify_zones(
     d["zone"] = "Gray"
     d.loc[d["final_resid"] > sigma_mult * sigma, "zone"] = "Red"
 
+    d["extreme_deviation"] = d["deviation_pct"].abs() > max_deviation_pct
     blue_resid = d["final_resid"] < -sigma_mult * sigma
     recency_cut = ym_subtract_months(latest_ym, recency_months)
-    gate = blue_resid & (d["n"] >= min_tx) & (d["last_ym"] >= recency_cut)
+    gate = (blue_resid & (d["n"] >= min_tx) & (d["last_ym"] >= recency_cut)
+            & ~d["extreme_deviation"])
     d.loc[gate, "zone"] = "Blue"
     d["blue_candidate_lowconf"] = blue_resid & ~gate
 

@@ -10,7 +10,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np
 import pandas as pd
 
-from config import AREA_BANDS, PRICE_OUTLIER_PCT
+from config import (AREA_BANDS, PRICE_OUTLIER_PCT,
+                    DONG_OUTLIER_IQR, DONG_OUTLIER_MIN_ROWS, MIN_UNIT_AREA)
 
 
 def coerce_amount(value):
@@ -83,11 +84,43 @@ def winsorize_price(df: pd.DataFrame, pct: tuple) -> pd.DataFrame:
     return d.reset_index(drop=True)
 
 
+def remove_dong_outliers(df: pd.DataFrame, k_iqr: float, min_rows: int) -> pd.DataFrame:
+    """동(구·법정동)별 price_per_sqm의 Tukey far-out 이상치(±k·IQR 밖) 제거.
+
+    거래수 min_rows 미만 동은 IQR이 불안정해 건너뛴다(전부 유지).
+    동네 기준으로는 극단이지만 전역으로는 정상인 거래를 잡는다.
+    """
+    d = df.copy()
+    stats = d.groupby(["구", "법정동"])["price_per_sqm"].agg(
+        q1=lambda s: s.quantile(0.25),
+        q3=lambda s: s.quantile(0.75),
+        cnt="size",
+    ).reset_index()
+    iqr = stats["q3"] - stats["q1"]
+    stats["lo"] = stats["q1"] - k_iqr * iqr
+    stats["hi"] = stats["q3"] + k_iqr * iqr
+    d = d.merge(stats[["구", "법정동", "lo", "hi", "cnt"]], on=["구", "법정동"], how="left")
+    keep = (d["cnt"] < min_rows) | (
+        (d["price_per_sqm"] >= d["lo"]) & (d["price_per_sqm"] <= d["hi"])
+    )
+    return d[keep].drop(columns=["lo", "hi", "cnt"]).reset_index(drop=True)
+
+
+def remove_small_units(df: pd.DataFrame, min_area: float) -> pd.DataFrame:
+    """전용면적 min_area 미만(도시형생활주택/원룸 추정) 거래 제거.
+
+    평당가가 일반 아파트와 비교 불가한 다른 자산군이라 모델에서 제외한다.
+    """
+    return df[df["전용면적"] >= min_area].reset_index(drop=True)
+
+
 def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     """전체 정제 파이프라인."""
     d = add_derived_columns(df)
     d = remove_cancelled(d)
     d = remove_invalid(d)
+    d = remove_small_units(d, MIN_UNIT_AREA)
     d = remove_duplicates(d)
     d = winsorize_price(d, PRICE_OUTLIER_PCT)
+    d = remove_dong_outliers(d, DONG_OUTLIER_IQR, DONG_OUTLIER_MIN_ROWS)
     return d

@@ -133,3 +133,30 @@ def test_add_complex_price_stats():
     assert p.loc["P", "avg_price_per_sqm"] == 1100.0
     assert p.loc["Q", "avg_price_per_sqm"] == 800.0
     assert p.loc["P", "median_amount"] == 55000.0
+
+
+def test_classify_zones_excludes_extreme_deviation_from_blue():
+    # 두 단지 모두 강한 음의 잔차지만, EXTREME은 편차가 비현실적으로 큼 → Blue 제외.
+    # 6행 구성: NORMAL(-0.60)·EXTREME(-0.90)은 음의 잔차, P1~P4(0.30~0.40)는 양.
+    # 통근이 모두 동일(30분)이므로 2단계 회귀 예측 = 전체 평균 ≈ -0.0117.
+    # 결과:
+    #   NORMAL  final_resid ≈ -0.588, deviation_pct ≈ -58.8  →  |<60| → 이상치 아님 → Blue
+    #   EXTREME final_resid ≈ -0.888, deviation_pct ≈ -88.8  →  |>60| → 이상치 플래그 → Blue 제외
+    comp = pd.DataFrame({
+        "구": ["A"] * 6,
+        "법정동": ["x"] * 6,
+        "아파트명": ["NORMAL", "EXTREME", "P1", "P2", "P3", "P4"],
+        "입지가치지수": [-0.60, -0.90, 0.30, 0.35, 0.38, 0.40],
+        "n": [12, 12, 12, 12, 12, 12],
+        "last_ym": [202603, 202603, 202603, 202603, 202603, 202603],
+    })
+    commute = pd.DataFrame({"구": ["A"], "법정동": ["x"], "commute_minutes": [30]})
+    out = classify_zones(comp, commute, sigma_mult=1.0, min_tx=5,
+                         recency_months=6, latest_ym=202603,
+                         max_deviation_pct=60.0)
+    z = out.set_index("아파트명")
+    # NORMAL은 Blue, EXTREME(편차 매우 큼)은 Blue가 아니어야 함
+    assert z.loc["NORMAL", "zone"] == "Blue"
+    assert z.loc["EXTREME", "zone"] != "Blue"
+    assert bool(z.loc["EXTREME", "extreme_deviation"]) is True
+    assert bool(z.loc["NORMAL", "extreme_deviation"]) is False
