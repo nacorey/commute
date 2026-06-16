@@ -41,3 +41,27 @@ def fit_quality_model(df: pd.DataFrame):
     d["resid"] = y - model.predict(X)
     r2 = float(model.score(X, y))
     return model, d, r2
+
+
+def aggregate_to_complex(scored: pd.DataFrame, k: float) -> pd.DataFrame:
+    """거래 잔차를 단지 단위로 집계 + 동 평균으로 Empirical Bayes 수축.
+
+    입지가치지수 = (n·r_c + k·r_dong) / (n + k)
+    """
+    dong = (
+        scored.groupby(["구", "법정동"])["resid"].mean().rename("r_dong").reset_index()
+    )
+    comp = (
+        scored.groupby(["구", "법정동", "아파트명"])
+        .agg(
+            r_c=("resid", "mean"),
+            n=("resid", "size"),
+            last_ym=("거래년월", "max"),
+        )
+        .reset_index()
+    )
+    comp = comp.merge(dong, on=["구", "법정동"], how="left")
+    comp["입지가치지수"] = (comp["n"] * comp["r_c"] + k * comp["r_dong"]) / (
+        comp["n"] + k
+    )
+    return comp
