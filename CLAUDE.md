@@ -28,7 +28,7 @@ commute_value_finder/
 - **Spatial Analysis:** GeoPandas (행정동 경계, 공간 조인)
 - **Data Processing:** Pandas / NumPy
 - **Statistical Modeling:** Scikit-learn (선형 회귀, 잔차 분석)
-- **LLM:** Anthropic Claude API
+- **LLM:** OpenAI API (gpt-5.4-mini, 구조화 JSON 출력)
 - **Commute Time:** 카카오맵 Directions API
 
 ## Environment Variables
@@ -36,7 +36,7 @@ commute_value_finder/
 `commute_value_finder/.env` 파일에 다음 키 필요 (`.gitignore` 적용됨):
 - `MOLIT_API_KEY` — 공공데이터포털 실거래가 API 디코딩 인증키
 - `KAKAO_API_KEY` — 카카오 REST API 키
-- `ANTHROPIC_API_KEY` — Anthropic API 키
+- `OPENAI_API_KEY` — OpenAI API 키 (LLM 브리핑)
 
 `src/utils.py`의 `load_env(required_keys=[...])` 함수로 필요한 키만 선택적 검증 가능.
 
@@ -48,7 +48,7 @@ commute_value_finder/
   - `numOfRows=1000`이면 대부분 한 페이지로 조회 가능
   - 주의: `openapi.molit.go.kr:8081` 엔드포인트는 DNS가 127.0.0.1로 리졸브되어 사용 불가
 - **카카오맵 Directions:** REST API, 월 300,000건 무료 한도
-- **Anthropic Claude:** 프롬프트에 실거래가 데이터 기반 제약 필수 (할루시네이션 방지)
+- **OpenAI gpt-5.4-mini:** 구조화 JSON 출력으로 할루시네이션 방지, 실거래가 데이터 근거 제약 필수
 
 ## Commands
 
@@ -72,7 +72,7 @@ streamlit run app.py
 1. **데이터 수집** (`src/data_collector.py`) — 공공데이터포털 API에서 서울 25개 구 실거래가 수집 (ThreadPoolExecutor 병렬 처리)
 2. **분석/모델링** (`zone_analyzer.py`) — Pandas 정제 → GeoPandas 공간 조인 → Scikit-learn 선형 회귀 → 잔차 분석으로 Blue/Gray/Red Zone 분류
 3. **시각화** (`map_builder.py`) — Folium 히트맵, 통근 반경 원, Zone별 마커, 툴팁
-4. **LLM 브리핑** (`src/llm_briefing.py`) — Blue Zone 데이터를 컨텍스트로 OpenAI API(GPT-4o)에 주입, 동네 3곳 추천
+4. **LLM 브리핑** (`src/llm_briefing.py`) — Blue Zone 데이터를 컨텍스트로 OpenAI API(gpt-5.4-mini)에 주입, 동네 3곳 추천
 5. **대시보드** (`app.py`) — Streamlit 통합 UI (지도/분석테이블/AI브리핑/회귀분석 탭, 지하철 오버레이, 아파트 상세)
 
 ## Zone Classification Logic
@@ -91,3 +91,25 @@ streamlit run app.py
 | 2 | `src/zone_analyzer.py`, `output/map_phase2.html` | 완료 |
 | 3 | `src/llm_briefing.py`, `output/map_final.html` | 완료 |
 | 4 | `app.py` (Streamlit 대시보드), `README.md` | 완료 |
+
+## Additional Engineering Guidelines
+
+### Data Quality
+- 원본 API 응답(`data/raw/`)과 정제 데이터를 분리하고, 분석 전 스키마를 검증한다.
+- 거래건수가 부족한 단지는 저평가로 단정하지 않는다(Blue 신뢰 게이트).
+
+### Commute API
+- 모든 카카오 호출은 캐시하고, 동일 origin-dest는 재호출하지 않는다.
+- 재시도(backoff)·타임아웃·일일 호출 가드를 둔다.
+
+### Modeling
+- 베이스라인: 통근→평당가. 강화: 2단계 헤도닉(면적·평형·층·연식·시점 통제 → 통근+지하철 대비 잔차).
+- Blue 분류는 잔차 + 거래건수 + 최근성을 함께 본다.
+- 표본이 부족하면 저평가로 단정하지 않는다.
+
+### Validation
+- 시간 홀드아웃 백테스트로 신호 유효성을 점검하고, Moran's I로 공간 자기상관(군집 아티팩트)을 검정한다.
+
+### LLM Briefing
+- 제공된 단지·분석 데이터만 사용. 단지명·가격·통근·지역을 창작 금지.
+- 추천마다 risk_notes 포함. 사용자 표시 전 구조화 JSON으로 받는다.
