@@ -38,6 +38,8 @@ FIELD_MAP = {
     "buildYear": "건축년도",
     "dealYear": "년",
     "dealMonth": "월",
+    "cdealType": "해제여부",       # 'O' = 계약 취소
+    "cdealDay": "해제사유발생일",
 }
 
 MAX_RETRIES = 3
@@ -157,6 +159,7 @@ def collect_all() -> pd.DataFrame:
     col_order = [
         "지역코드", "구", "아파트명", "법정동", "전용면적",
         "거래금액", "층", "건축년도", "년", "월",
+        "해제여부", "해제사유발생일",
     ]
     df = df[[c for c in col_order if c in df.columns]].copy()
 
