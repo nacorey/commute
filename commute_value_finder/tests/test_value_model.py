@@ -135,6 +135,30 @@ def test_add_complex_price_stats():
     assert p.loc["P", "median_amount"] == 55000.0
 
 
+from src.value_model import recompute_zones
+
+
+def test_recompute_zones_uses_new_commute_and_drops_stale():
+    base = pd.DataFrame({
+        "구": ["A", "A", "A"], "법정동": ["x", "x", "x"],
+        "아파트명": ["P", "Q", "R"],
+        "입지가치지수": [-0.3, 0.0, 0.3], "n": [10, 10, 10],
+        "last_ym": [202603, 202603, 202603],
+        "subway_dist_km": [0.3, 0.3, 0.3],
+        "avg_price_per_sqm": [1000.0, 2000.0, 3000.0],
+        # stale columns from a previous run — must be dropped/recomputed:
+        "commute_minutes": [99, 99, 99], "zone": ["?", "?", "?"],
+        "final_resid": [0.0, 0.0, 0.0],
+    })
+    commute = pd.DataFrame({"구": ["A"], "법정동": ["x"], "commute_minutes": [30]})
+    out = recompute_zones(base, commute, sigma_mult=1.0, min_tx=5,
+                          recency_months=6, latest_ym=202603, max_deviation_pct=60.0)
+    assert "zone" in out.columns
+    assert set(out["zone"]).issubset({"Blue", "Gray", "Red"})
+    assert (out["commute_minutes"] == 30).all()   # 새 통근값 사용(stale 99 아님)
+    assert "avg_price_per_sqm" in out.columns       # 보존 컬럼 유지
+
+
 def test_classify_zones_excludes_extreme_deviation_from_blue():
     # 두 단지 모두 강한 음의 잔차지만, EXTREME은 편차가 비현실적으로 큼 → Blue 제외.
     # 6행 구성: NORMAL(-0.60)·EXTREME(-0.90)은 음의 잔차, P1~P4(0.30~0.40)는 양.

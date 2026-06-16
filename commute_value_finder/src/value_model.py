@@ -127,6 +127,22 @@ def classify_zones(
     return d
 
 
+def recompute_zones(base_df, commute_df, sigma_mult, min_tx,
+                    recency_months, latest_ym, max_deviation_pct=100.0):
+    """이미 계산된 단지 데이터(입지가치지수 등)에 새 통근값을 적용해 zone만 재계산.
+
+    회사 위치 변경 시 무거운 1단계/집계를 다시 하지 않고 2단계만 다시 돈다.
+    stale 컬럼(commute_minutes/zone/final_resid 등)은 버리고 다시 만든다.
+    """
+    keep = ["구", "법정동", "아파트명", "입지가치지수", "n", "last_ym",
+            "subway_dist_km", "avg_price_per_sqm", "median_amount",
+            "lat", "lon", "nearest_station"]
+    comp = base_df[[c for c in keep if c in base_df.columns]].copy()
+    return classify_zones(comp, commute_df, sigma_mult, min_tx,
+                          recency_months, latest_ym,
+                          max_deviation_pct=max_deviation_pct)
+
+
 def add_complex_price_stats(comp: pd.DataFrame, scored: pd.DataFrame) -> pd.DataFrame:
     """단지별 실제 평당가·중위 거래금액을 comp에 병합 (LLM·대시보드용)."""
     stats = (
