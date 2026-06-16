@@ -76,6 +76,8 @@ def get_analysis_months() -> list[str]:
 # ── 모델 정제 파라미터 ──
 AREA_BANDS = [60, 85, 135]            # 전용면적 평형 구간 경계 (㎡)
 PRICE_OUTLIER_PCT = (1, 99)           # 평당가 이상치 절단 백분위
+DONG_OUTLIER_IQR = 3.0                # 동별 IQR fence 배수(Tukey far-out)
+DONG_OUTLIER_MIN_ROWS = 20            # 이 거래수 미만 동은 IQR 필터 건너뜀
 MIN_TRANSACTIONS_PER_COMPLEX = 5      # Blue 게이트: 최소 거래건수
 SHRINKAGE_K = 5                       # Empirical Bayes 수축 강도
 RECENCY_MONTHS = 6                    # Blue 게이트: 최근 거래 존재 기준(개월)
