@@ -60,6 +60,7 @@ def aggregate_to_complex(scored: pd.DataFrame, k: float) -> pd.DataFrame:
         )
         .reset_index()
     )
+    comp["last_ym"] = comp["last_ym"].astype(int)
     comp = comp.merge(dong, on=["구", "법정동"], how="left")
     comp["입지가치지수"] = (comp["n"] * comp["r_c"] + k * comp["r_dong"]) / (
         comp["n"] + k
@@ -92,6 +93,8 @@ def classify_zones(
     )
     # 통근 결측은 전체 평균으로 대체(분류 안정성)
     mean_commute = d["commute_minutes"].mean()
+    if pd.isna(mean_commute):
+        mean_commute = 30.0  # 통근 매칭이 전혀 없을 때의 안전 기본값
     d["commute_minutes"] = d["commute_minutes"].fillna(mean_commute)
 
     model = LinearRegression().fit(d[["commute_minutes"]], d["입지가치지수"])

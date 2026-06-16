@@ -73,3 +73,22 @@ def test_classify_zones_applies_blue_gate():
     assert z["LOWN"] == "Gray"          # 거래건수 부족 → 강등
     assert out.set_index("아파트명").loc["LOWN", "blue_candidate_lowconf"]
     assert "confidence" in out.columns
+
+
+def test_classify_zones_handles_unmatched_commute():
+    # 통근 데이터가 어떤 단지 동과도 매칭되지 않아도 크래시 없이 분류돼야 함
+    comp = pd.DataFrame(
+        {
+            "구": ["A", "A", "A"],
+            "법정동": ["x", "x", "x"],
+            "아파트명": ["P", "Q", "R"],
+            "입지가치지수": [-0.5, 0.0, 0.5],
+            "n": [10, 10, 10],
+            "last_ym": [202603, 202603, 202603],
+        }
+    )
+    commute = pd.DataFrame({"구": ["B"], "법정동": ["y"], "commute_minutes": [30]})
+    out = classify_zones(comp, commute, sigma_mult=1.0, min_tx=5,
+                         recency_months=6, latest_ym=202603)
+    assert set(out["zone"]).issubset({"Blue", "Gray", "Red"})
+    assert out["final_resid"].notna().all()
