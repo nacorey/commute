@@ -79,3 +79,4 @@ PRICE_OUTLIER_PCT = (1, 99)           # 평당가 이상치 절단 백분위
 MIN_TRANSACTIONS_PER_COMPLEX = 5      # Blue 게이트: 최소 거래건수
 SHRINKAGE_K = 5                       # Empirical Bayes 수축 강도
 RECENCY_MONTHS = 6                    # Blue 게이트: 최근 거래 존재 기준(개월)
+MAX_GEOCODE_CALLS = 500               # 단지 지오코딩 1회 실행당 최대 API 호출(나머지 동 좌표 폴백)

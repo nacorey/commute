@@ -97,8 +97,14 @@ def classify_zones(
         mean_commute = 30.0  # 통근 매칭이 전혀 없을 때의 안전 기본값
     d["commute_minutes"] = d["commute_minutes"].fillna(mean_commute)
 
-    model = LinearRegression().fit(d[["commute_minutes"]], d["입지가치지수"])
-    d["pred_idx"] = model.predict(d[["commute_minutes"]])
+    feature_cols = ["commute_minutes"]
+    if "subway_dist_km" in d.columns:
+        subway_mean = d["subway_dist_km"].mean()
+        if not pd.isna(subway_mean):
+            d["subway_dist_km"] = d["subway_dist_km"].fillna(subway_mean)
+            feature_cols.append("subway_dist_km")
+    model = LinearRegression().fit(d[feature_cols], d["입지가치지수"])
+    d["pred_idx"] = model.predict(d[feature_cols])
     d["final_resid"] = d["입지가치지수"] - d["pred_idx"]
     d["deviation_pct"] = (d["final_resid"] * 100).round(1)  # log 잔차 ≈ % 편차
 
