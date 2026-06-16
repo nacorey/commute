@@ -45,3 +45,27 @@ def test_kakao_estimator_retries_then_gives_up():
     est = KakaoDrivingEstimator("KEY", 37.5, 127.0, fetch=flaky, sleeper=lambda s: None)
     assert est.minutes(1, 1) is None
     assert attempts["n"] == 3
+
+
+import pandas as pd
+from src.commute import calibrate_min_per_km, straight_line_commute
+from src.subway_access import haversine_km
+
+
+def test_calibrate_min_per_km_recovers_slope():
+    ref = (37.5, 127.0)
+    dong_coords = {("A", "x"): (37.59, 127.0), ("B", "y"): (37.5, 127.0)}  # B == ref
+    km_a = haversine_km(37.59, 127.0, *ref)
+    commute = pd.DataFrame({"구": ["A", "B"], "법정동": ["x", "y"],
+                            "commute_minutes": [round(3 * km_a), 0]})
+    slope = calibrate_min_per_km(commute, dong_coords, ref[0], ref[1])
+    assert 2.0 < slope < 4.0   # ~3 min/km (B at distance 0 is excluded)
+
+
+def test_straight_line_commute_orders_by_distance():
+    dong_coords = {("A", "x"): (37.59, 127.0), ("B", "y"): (37.5, 127.0)}
+    out = straight_line_commute(dong_coords, 37.5, 127.0, min_per_km=3.0)
+    o = out.set_index(["구", "법정동"])["commute_minutes"]
+    assert set(out.columns) == {"구", "법정동", "commute_minutes"}
+    assert o[("B", "y")] <= o[("A", "x")]   # B is at the destination → smaller
+    assert (out["commute_minutes"] >= 1).all()

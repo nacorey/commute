@@ -11,8 +11,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import numpy as np
 import pandas as pd
 import requests
+from src.subway_access import haversine_km
 
 KAKAO_NAVI_URL = "https://apis-navi.kakaomobility.com/v1/directions"
 
@@ -29,6 +31,35 @@ def load_dong_commute(cache_path) -> pd.DataFrame:
         gu, dong = key.split("_", 1)
         rows.append({"구": gu, "법정동": dong, "commute_minutes": minutes})
     return pd.DataFrame(rows, columns=cols)
+
+
+def calibrate_min_per_km(commute_df, dong_coords, ref_lat, ref_lng):
+    """기존 통근(분)과 ref 위치까지의 직선거리로 분/km 보정계수(중앙값) 추정.
+
+    너무 가까운 동(<0.5km)은 비율이 불안정해 제외. 표본 없으면 3.0 기본.
+    """
+    ratios = []
+    for _, r in commute_df.iterrows():
+        c = dong_coords.get((r["구"], r["법정동"]))
+        if not c:
+            continue
+        km = haversine_km(c[0], c[1], ref_lat, ref_lng)
+        if km > 0.5 and r["commute_minutes"] > 0:
+            ratios.append(r["commute_minutes"] / km)
+    return float(np.median(ratios)) if ratios else 3.0
+
+
+def straight_line_commute(dong_coords, dest_lat, dest_lng, min_per_km):
+    """각 동 직선거리 × 보정계수 → 추정 통근(분) DataFrame.
+
+    동 좌표 dict {(구,법정동): (lat,lon)} 기준. 최소 1분.
+    """
+    rows = []
+    for (gu, dong), (lat, lon) in dong_coords.items():
+        km = haversine_km(lat, lon, dest_lat, dest_lng)
+        rows.append({"구": gu, "법정동": dong,
+                     "commute_minutes": max(1, round(km * min_per_km))})
+    return pd.DataFrame(rows)
 
 
 class CommuteEstimator(ABC):
