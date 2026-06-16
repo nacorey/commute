@@ -4,6 +4,7 @@ from src.preprocessor import (
     coerce_amount,
     add_derived_columns,
     remove_invalid,
+    remove_cancelled,
     remove_duplicates,
     winsorize_price,
     preprocess,
@@ -49,6 +50,16 @@ def test_remove_duplicates():
         }
     )
     assert len(remove_duplicates(df)) == 1
+
+
+def test_remove_cancelled_drops_O_and_passes_when_column_absent():
+    # 해제여부 == 'O'/'o' (계약 취소) 행 제거
+    df = pd.DataFrame({"거래금액": [100, 200, 300], "해제여부": ["O", "", "o"]})
+    out = remove_cancelled(df)
+    assert len(out) == 1  # 빈 문자열 행만 유지
+    # 컬럼이 없으면 그대로 통과
+    df2 = pd.DataFrame({"거래금액": [1, 2]})
+    assert len(remove_cancelled(df2)) == 2
 
 
 def test_winsorize_price_clips_extremes():

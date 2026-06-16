@@ -67,7 +67,9 @@ def remove_duplicates(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def winsorize_price(df: pd.DataFrame, pct: tuple) -> pd.DataFrame:
-    """price_per_sqm를 (low, high) 백분위로 절단."""
+    """price_per_sqm가 (low, high) 백분위 범위를 벗어나는 행을 제거(절단)한다.
+    (값을 클램프하지 않고 이상치 행 자체를 떨어뜨린다.)
+    """
     d = df.copy()
     lo, hi = np.percentile(d["price_per_sqm"].dropna(), pct)
     d = d[(d["price_per_sqm"] >= lo) & (d["price_per_sqm"] <= hi)]
