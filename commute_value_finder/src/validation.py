@@ -71,3 +71,41 @@ def backtest(clean: pd.DataFrame, commute: pd.DataFrame, *, train_months,
     out["blue_minus_gray"] = b - g
     out["signal_valid"] = b > g
     return out
+
+
+def _knn_neighbors(coords: np.ndarray, k: int) -> np.ndarray:
+    """각 점의 k 최근접 이웃 인덱스 (자기 자신 제외)."""
+    nn = NearestNeighbors(n_neighbors=k + 1).fit(coords)
+    _, idx = nn.kneighbors(coords)
+    return idx[:, 1:]  # 0번째는 자기 자신
+
+
+def _morans_i_stat(values: np.ndarray, neighbors: np.ndarray) -> float:
+    """행 표준화 KNN 가중치 기반 Moran's I 통계량."""
+    z = values - values.mean()
+    denom = (z ** 2).sum()
+    if denom == 0:
+        return 0.0
+    num = np.sum(z * z[neighbors].mean(axis=1))
+    return float(num / denom)
+
+
+def morans_i(values, coords, k=8, n_perm=199, seed=0):
+    """Moran's I와 순열 기반 p-value 반환.
+
+    values: 1D array, coords: (n,2) 좌표. KNN(k) 행표준화 가중치.
+    유의한 양의 I → 인접 지역 잔차가 서로 상관(군집 아티팩트 가능성).
+    """
+    values = np.asarray(values, dtype=float)
+    coords = np.asarray(coords, dtype=float)
+    neighbors = _knn_neighbors(coords, k)
+    observed = _morans_i_stat(values, neighbors)
+
+    rng = np.random.default_rng(seed)
+    count = 0
+    for _ in range(n_perm):
+        perm = rng.permutation(values)
+        if _morans_i_stat(perm, neighbors) >= observed:
+            count += 1
+    p_value = (count + 1) / (n_perm + 1)
+    return observed, p_value
