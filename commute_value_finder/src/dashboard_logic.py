@@ -1,5 +1,7 @@
 """대시보드 표시 로직: 라벨·리스크 플래그·외부 링크·후보 랭킹 (순수함수)."""
 
+from urllib.parse import quote
+
 ZONE_LABELS = {
     "Blue": "저평가 후보 (확인 필요)",
     "Gray": "적정",
@@ -29,13 +31,19 @@ def risk_flags(row) -> list:
 
 
 def naver_land_url(gu: str, dong: str, apt: str) -> str:
-    """네이버 부동산 통합검색 링크 (현재 호가 확인용). 단지명을 그대로 포함."""
-    return f"https://m.land.naver.com/search/result/{dong} {apt}"
+    """네이버 통합검색 링크 (현재 호가 확인용).
+
+    매물 전용 경로(m.land)는 단지 매칭 실패 시 빈 화면이 뜨므로,
+    거의 항상 부동산 패널이 노출되는 통합검색으로 보낸다.
+    한글·공백·특수문자는 URL 인코딩한다.
+    """
+    keyword = quote(f"{dong} {apt} 아파트".strip())
+    return f"https://search.naver.com/search.naver?query={keyword}"
 
 
 def hogangnono_url(apt: str) -> str:
-    """호갱노노 검색 링크. 단지명을 그대로 포함."""
-    return f"https://hogangnono.com/search?q={apt}"
+    """호갱노노 검색 링크. 단지명을 URL 인코딩하여 포함."""
+    return f"https://hogangnono.com/search?q={quote(apt)}"
 
 
 def rank_candidates(zones, max_commute, max_price, top_n=20):
