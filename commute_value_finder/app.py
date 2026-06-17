@@ -95,7 +95,9 @@ with st.sidebar:
     st.divider()
     st.subheader("필터")
     max_commute = st.slider("통근 시간 상한 (분)", 15, 120, 50)
-    max_price = st.slider("평당가 상한 (만원/㎡)", 500, 8000, 3000, step=100)
+    _pmin = int(base["avg_price_per_sqm"].min())
+    _pmax = int(base["avg_price_per_sqm"].max()) + 1
+    max_price = st.slider("평당가 상한 (만원/㎡)", _pmin, _pmax, _pmax, step=50)
     show_blue = st.checkbox("Blue (저평가 후보)", True)
     show_gray = st.checkbox("Gray (적정)", False)
     show_red = st.checkbox("Red (프리미엄)", False)
