@@ -31,19 +31,23 @@ def risk_flags(row) -> list:
 
 
 def naver_land_url(gu: str, dong: str, apt: str) -> str:
-    """네이버 통합검색 링크 (현재 호가 확인용).
+    """네이버 지도검색 링크 (현재 매물·호가 확인용).
 
     매물 전용 경로(m.land)는 단지 매칭 실패 시 빈 화면이 뜨므로,
-    거의 항상 부동산 패널이 노출되는 통합검색으로 보낸다.
-    한글·공백·특수문자는 URL 인코딩한다.
+    이름 검색이 안정적이고 단지 장소 카드의 '부동산' 탭(시세·매물)으로
+    이어지는 지도검색으로 보낸다. 한글·공백·특수문자는 URL 인코딩한다.
     """
-    keyword = quote(f"{dong} {apt} 아파트".strip())
-    return f"https://search.naver.com/search.naver?query={keyword}"
+    keyword = quote(f"{dong} {apt}".strip())
+    return f"https://map.naver.com/p/search/{keyword}"
 
 
-def hogangnono_url(apt: str) -> str:
-    """호갱노노 검색 링크. 단지명을 URL 인코딩하여 포함."""
-    return f"https://hogangnono.com/search?q={quote(apt)}"
+def hogangnono_url(dong: str, apt: str) -> str:
+    """호갱노노 검색 링크 (시세·실거래 확인용).
+
+    동을 함께 넣어 동명이 단지의 오매칭을 줄인다. URL 인코딩 적용.
+    """
+    keyword = quote(f"{dong} {apt}".strip())
+    return f"https://hogangnono.com/search?q={keyword}"
 
 
 def rank_candidates(zones, max_commute, max_price, top_n=20):

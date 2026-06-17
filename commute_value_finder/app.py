@@ -15,7 +15,8 @@ from dotenv import load_dotenv
 
 from config import (COMPANY_NAME, COMPANY_LAT, COMPANY_LNG, ZONE_SIGMA,
                     MIN_TRANSACTIONS_PER_COMPLEX, RECENCY_MONTHS, EXTREME_DEVIATION_PCT)
-from src.dashboard_logic import zone_label, risk_flags, naver_land_url, rank_candidates
+from src.dashboard_logic import (zone_label, risk_flags, naver_land_url,
+                                 hogangnono_url, rank_candidates)
 from src.subway_access import load_stations, haversine_km
 from src.commute import (load_dong_commute, calibrate_min_per_km,
                          straight_line_commute, KakaoDrivingEstimator)
@@ -215,6 +216,9 @@ with tab_rank:
                 with cc2:
                     st.link_button("네이버부동산",
                                    naver_land_url(r["구"], r["법정동"], r["아파트명"]),
+                                   use_container_width=True)
+                    st.link_button("호갱노노",
+                                   hogangnono_url(r["법정동"], r["아파트명"]),
                                    use_container_width=True)
 
 # ── 탭3: AI 브리핑 ──

@@ -22,24 +22,32 @@ def test_risk_flags():
 
 def test_linkout_urls():
     n = naver_land_url("노원구", "상계동", "A아파트")
-    h = hogangnono_url("A아파트")
+    h = hogangnono_url("상계동", "A아파트")
     # URL은 인코딩되므로 디코딩 후 단지명이 포함되는지 확인한다.
     assert n.startswith("https://") and "A아파트" in unquote(n)
     assert h.startswith("https://") and "A아파트" in unquote(h)
 
 
-def test_naver_url_is_integrated_search():
-    # 통합검색 엔드포인트를 사용하고 동·단지명이 쿼리에 포함되어야 한다.
+def test_naver_url_is_map_search():
+    # 네이버 지도검색 엔드포인트를 쓰고 동·단지명이 쿼리에 포함되어야 한다.
     url = naver_land_url("노원구", "상계동", "A아파트")
-    assert url.startswith("https://search.naver.com/search.naver?query=")
+    assert url.startswith("https://map.naver.com/p/search/")
     assert "상계동" in unquote(url) and "A아파트" in unquote(url)
 
 
-def test_naver_url_encodes_special_chars():
+def test_hogangnono_url_includes_dong():
+    # 호갱노노는 동을 함께 넣어 오매칭을 줄인다.
+    url = hogangnono_url("상계동", "A아파트")
+    assert url.startswith("https://hogangnono.com/search?q=")
+    assert "상계동" in unquote(url) and "A아파트" in unquote(url)
+
+
+def test_linkout_urls_encode_special_chars():
     # 괄호·공백 등 특수문자가 들어가도 raw 상태로 노출되지 않아야 한다.
-    url = naver_land_url("강남구", "삼성동", "래미안(102동)")
-    assert " " not in url and "(" not in url
-    assert "래미안(102동)" in unquote(url)
+    for url in (naver_land_url("강남구", "삼성동", "래미안(102동)"),
+                hogangnono_url("삼성동", "래미안(102동)")):
+        assert " " not in url and "(" not in url
+        assert "래미안(102동)" in unquote(url)
 
 
 def test_rank_candidates_filters_and_sorts():
